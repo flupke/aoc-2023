@@ -1,7 +1,6 @@
 use aoc_2023_rust_flupke::Problem;
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
 pub struct Day1;
 
 struct PlacedDigit {
