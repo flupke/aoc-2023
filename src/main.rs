@@ -1,6 +1,7 @@
 use aoc_2023_rust_flupke::Problem;
 use clap::{Parser, ValueEnum};
 mod day_1;
+mod day_2;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -19,8 +20,9 @@ enum Command {
 
 fn main() {
     let args = Cli::parse();
-    let module = match args.day {
+    let module: Box<dyn Problem> = match args.day {
         1 => Box::new(day_1::Day1),
+        2 => Box::new(day_2::Day2),
         _ => panic!("Day {} not implemented", args.day),
     };
     match args.command {
