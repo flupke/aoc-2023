@@ -4,6 +4,7 @@ mod day_1;
 mod day_2;
 mod day_3;
 mod day_4;
+mod day_5;
 
 #[derive(Parser, Debug)]
 struct Cli {
@@ -27,6 +28,7 @@ fn main() {
         2 => Box::new(day_2::Day2),
         3 => Box::new(day_3::Day3),
         4 => Box::new(day_4::Day4),
+        5 => Box::new(day_5::Day5),
         _ => panic!("Day {} not implemented", args.day),
     };
     match args.command {

@@ -1,4 +1,4 @@
-use aoc_2023_rust_flupke::Problem;
+use aoc_2023_rust_flupke::{split_numbers, Problem};
 
 pub struct Day4;
 
@@ -7,12 +7,6 @@ struct Card {
     _id: u8,
     winning_numbers: Vec<u8>,
     numbers: Vec<u8>,
-}
-
-fn split_numbers(line: &str) -> Vec<u8> {
-    line.split(" ")
-        .filter_map(|n| n.trim().parse::<u8>().ok())
-        .collect::<Vec<u8>>()
 }
 
 impl Card {
