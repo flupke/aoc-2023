@@ -82,40 +82,49 @@ impl Schematic {
     }
 }
 
-fn get_parts_sum(text: &str) -> u32 {
+fn get_gears_ratios_sum(text: &str) -> u32 {
     let schematic = Schematic::new(text);
     let (parts, symbols) = schematic.parse();
-    let mut touched_parts = HashSet::new();
+    let mut sum = 0;
+
     for symbol in symbols {
-        for dy in -1..=1 {
-            for dx in -1..=1 {
-                let x = symbol.x as i32 + dx;
-                let y = symbol.y as i32 + dy;
-                for part in &parts {
-                    if part.x_start as i32 <= x && x <= part.x_end as i32 && part.y as i32 == y {
-                        touched_parts.insert(part);
+        if symbol.symbol == '*' {
+            let mut touched_parts = HashSet::new();
+            for dy in -1..=1 {
+                for dx in -1..=1 {
+                    let x = symbol.x as i32 + dx;
+                    let y = symbol.y as i32 + dy;
+                    for part in &parts {
+                        if part.x_start as i32 <= x && x <= part.x_end as i32 && part.y as i32 == y
+                        {
+                            touched_parts.insert(part);
+                        }
                     }
                 }
             }
+            if touched_parts.len() == 2 {
+                sum += touched_parts
+                    .iter()
+                    .map(|part| part.value.parse::<u32>().unwrap())
+                    .product::<u32>();
+            }
         }
     }
-    touched_parts
-        .iter()
-        .map(|part| part.value.parse::<u32>().unwrap())
-        .sum()
+
+    sum
 }
 
 impl Problem for Day3 {
     fn check(&self) {
         let text = std::fs::read_to_string("src/day_3/example.txt").unwrap();
-        let parts_sum = get_parts_sum(&text);
-        println!("Parts sum: {}", parts_sum);
+        let ratios_sum = get_gears_ratios_sum(&text);
+        println!("Gears ratio sum: {}", ratios_sum);
     }
 
     fn solve(&self) {
         let text = std::fs::read_to_string("src/day_3/input.txt").unwrap();
-        let parts_sum = get_parts_sum(&text);
-        println!("Parts sum: {}", parts_sum);
+        let ratios_sum = get_gears_ratios_sum(&text);
+        println!("Gears ratio sum: {}", ratios_sum);
     }
 }
 
