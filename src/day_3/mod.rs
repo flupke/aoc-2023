@@ -44,6 +44,13 @@ impl Schematic {
         let mut parts = Vec::new();
         let mut symbols = Vec::new();
         let mut current_part: Option<PlacedPart> = None;
+
+        fn push_current_part(current_part: &mut Option<PlacedPart>, parts: &mut Vec<PlacedPart>) {
+            if let Some(part) = current_part.take() {
+                parts.push(part);
+            }
+        }
+
         for y in 0..self.height {
             for x in 0..self.width {
                 let char = self.lines[y].chars().nth(x).unwrap();
@@ -63,22 +70,13 @@ impl Schematic {
                         }
                     }
                 } else if char == '.' {
-                    if current_part.is_some() {
-                        parts.push(current_part.clone().unwrap());
-                        current_part = None;
-                    }
+                    push_current_part(&mut current_part, &mut parts);
                 } else {
-                    if current_part.is_some() {
-                        parts.push(current_part.clone().unwrap());
-                        current_part = None;
-                    }
+                    push_current_part(&mut current_part, &mut parts);
                     symbols.push(PlacedSymbol { x, y, symbol: char });
                 }
             }
-            if current_part.is_some() {
-                parts.push(current_part.clone().unwrap());
-                current_part = None;
-            }
+            push_current_part(&mut current_part, &mut parts);
         }
         (parts, symbols)
     }
