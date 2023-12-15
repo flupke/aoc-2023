@@ -1,16 +1,14 @@
 use std::{str::FromStr, usize};
 
 use aoc_2023_rust_flupke::Problem;
+use itertools::Itertools;
 
 pub struct Day7;
 
-const CARDS: &str = "23456789TJQKA";
+const CARDS: &str = "J23456789TQKA";
 
 fn card_value(card: char) -> Result<usize, String> {
-    CARDS
-        .find(card)
-        .map(|value| value + 1)
-        .ok_or(format!("invalid card: {:?}", card))
+    CARDS.find(card).ok_or(format!("invalid card: {:?}", card))
 }
 
 type HandValue = (HandType, usize, usize, usize, usize, usize);
@@ -32,47 +30,8 @@ enum HandType {
 
 impl Hand {
     fn value(&self) -> HandValue {
-        let mut num_pairs = 0;
-        let mut num_triples = 0;
-        let mut num_quads = 0;
-        let mut num_quints = 0;
-        let mut prev_card = 0;
-        let mut chain_length = 1;
-
-        let mut sorted_cards = self.cards.clone();
-        sorted_cards.sort_by(|a, b| b.cmp(a));
-
-        let mut update_counts = |chain_length: &usize| match chain_length {
-            1 => {}
-            2 => num_pairs += 1,
-            3 => num_triples += 1,
-            4 => num_quads += 1,
-            5 => num_quints += 1,
-            _ => panic!("too many cards!"),
-        };
-
-        for card in sorted_cards {
-            if card == prev_card {
-                chain_length += 1;
-            } else {
-                update_counts(&chain_length);
-                chain_length = 1;
-            }
-            prev_card = card
-        }
-        update_counts(&chain_length);
-
-        let hand_type = match (num_quints, num_quads, num_triples, num_pairs) {
-            (1, _, _, _) => HandType::Quint,
-            (_, 1, _, _) => HandType::Quad,
-            (_, _, 1, 1) => HandType::FullHouse,
-            (_, _, 1, _) => HandType::Triple,
-            (_, _, _, 2) => HandType::TwoPairs,
-            (_, _, _, 1) => HandType::Pair,
-            _ => HandType::HighCard,
-        };
         (
-            hand_type,
+            self.best_hand_type(),
             self.cards[0],
             self.cards[1],
             self.cards[2],
@@ -80,6 +39,82 @@ impl Hand {
             self.cards[4],
         )
     }
+
+    fn best_hand_type(&self) -> HandType {
+        let mut sorted_cards = self.cards.clone();
+        sorted_cards.sort_by(|a, b| b.cmp(a));
+        let jokers_chain = find_jokers_chain(&sorted_cards);
+        if let Some((start, length)) = jokers_chain {
+            (0..length)
+                .map(|_| 1..CARDS.len())
+                .multi_cartesian_product()
+                .map(|joker_cards| {
+                    let mut cards = sorted_cards.clone();
+                    for (index, card) in joker_cards.iter().enumerate() {
+                        cards[start + index] = *card;
+                    }
+                    cards.sort_by(|a, b| b.cmp(a));
+                    hand_type(&cards)
+                })
+                .max()
+                .unwrap()
+        } else {
+            hand_type(&sorted_cards)
+        }
+    }
+}
+
+fn hand_type(sorted_cards: &Vec<usize>) -> HandType {
+    let mut num_pairs = 0;
+    let mut num_triples = 0;
+    let mut num_quads = 0;
+    let mut num_quints = 0;
+    let mut prev_card = usize::MAX;
+    let mut chain_length = 1;
+
+    let mut update_counts = |chain_length: &usize| match chain_length {
+        1 => {}
+        2 => num_pairs += 1,
+        3 => num_triples += 1,
+        4 => num_quads += 1,
+        5 => num_quints += 1,
+        _ => panic!("too many cards!"),
+    };
+
+    for card in sorted_cards {
+        if *card == prev_card {
+            chain_length += 1;
+        } else {
+            update_counts(&chain_length);
+            chain_length = 1;
+        }
+        prev_card = *card
+    }
+    update_counts(&chain_length);
+
+    match (num_quints, num_quads, num_triples, num_pairs) {
+        (1, _, _, _) => HandType::Quint,
+        (_, 1, _, _) => HandType::Quad,
+        (_, _, 1, 1) => HandType::FullHouse,
+        (_, _, 1, _) => HandType::Triple,
+        (_, _, _, 2) => HandType::TwoPairs,
+        (_, _, _, 1) => HandType::Pair,
+        _ => HandType::HighCard,
+    }
+}
+
+fn find_jokers_chain(sorted_cards: &[usize]) -> Option<(usize, usize)> {
+    let mut chain_length = 0;
+    let mut chain_start = None;
+    for (index, card) in sorted_cards.iter().enumerate() {
+        if *card == 0 {
+            if chain_start.is_none() {
+                chain_start = Some(index);
+            }
+            chain_length += 1;
+        }
+    }
+    chain_start.map(|start| (start, chain_length))
 }
 
 impl FromStr for Hand {
