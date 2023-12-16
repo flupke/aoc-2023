@@ -30,9 +30,9 @@ fn predict(values: &Vec<i64>) -> i64 {
     }
     let mut prediction = 0;
     for diff in all_diffs.iter().rev() {
-        prediction += diff.last().unwrap();
+        prediction = diff.first().unwrap() - prediction;
     }
-    prediction + values.last().unwrap()
+    values.first().unwrap() - prediction
 }
 
 impl Problem for Day9 {
