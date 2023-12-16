@@ -4,7 +4,7 @@ use aoc_2023_rust_flupke::Problem;
 
 pub struct Day8;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 enum Direction {
     Left = 0,
     Right = 1,
@@ -49,25 +49,46 @@ impl FromStr for Instructions {
 struct Map {
     instructions: Instructions,
     nodes: HashMap<String, Vec<String>>,
-    start_key: String,
-    end_key: String,
 }
 
 impl Map {
-    fn count_steps_to_end(&self) -> usize {
+    fn count_common_steps_to_end(&self) -> usize {
+        self.nodes
+            .keys()
+            .filter(|key| key.ends_with('A'))
+            .map(|key| self.count_steps_to_end(key))
+            .reduce(least_common_divisor)
+            .unwrap()
+    }
+
+    fn count_steps_to_end(&self, start_key: &str) -> usize {
         let mut steps = 1;
-        let mut current_key = &self.start_key;
+        let mut current_key = start_key;
         for direction in self.instructions.clone() {
             let value = &self.nodes[current_key];
             current_key = &value[direction as usize];
-            // qqqdbg!(&current_key);
-            if *current_key == self.end_key {
+            if current_key.ends_with('Z') {
                 break;
             }
             steps += 1;
         }
         steps
     }
+}
+
+fn least_common_divisor(a: usize, b: usize) -> usize {
+    a * b / greatest_common_factor(a, b)
+}
+
+fn greatest_common_factor(a: usize, b: usize) -> usize {
+    let mut a = a;
+    let mut b = b;
+    while b != 0 {
+        let temp = b;
+        b = a % b;
+        a = temp;
+    }
+    a
 }
 
 impl FromStr for Map {
@@ -92,16 +113,9 @@ impl FromStr for Map {
             nodes.insert(key.to_string(), vec![left.to_string(), right.to_string()]);
         }
 
-        let mut keys = nodes.keys().collect::<Vec<&String>>();
-        keys.sort();
-        let start_key = keys[0].to_string();
-        let end_key = keys[keys.len() - 1].to_string();
-
         Ok(Map {
             instructions,
             nodes,
-            start_key,
-            end_key,
         })
     }
 }
@@ -111,7 +125,7 @@ impl Problem for Day8 {
         let steps = include_str!("example.txt")
             .parse::<Map>()
             .unwrap()
-            .count_steps_to_end();
+            .count_common_steps_to_end();
         println!("steps: {}", steps);
     }
 
@@ -119,7 +133,7 @@ impl Problem for Day8 {
         let steps = include_str!("input.txt")
             .parse::<Map>()
             .unwrap()
-            .count_steps_to_end();
+            .count_common_steps_to_end();
         println!("steps: {}", steps);
     }
 }
