@@ -1,14 +1,11 @@
 mod array;
 mod vector;
 
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display, usize};
 
 use aoc_2023_rust_flupke::Problem;
 
-use self::{
-    array::{Array, ArrayManipulator},
-    vector::Vector,
-};
+use self::{array::Array, vector::Vector};
 
 pub struct Day10;
 
@@ -116,33 +113,25 @@ fn neighbors_deltas() -> impl Iterator<Item = Vector> {
     ])
 }
 
+#[derive(Clone)]
 struct Map {
     tiles: Array<Tile>,
-}
-
-impl ArrayManipulator<Tile> for Map {
-    fn data_mut(&mut self) -> &mut Array<Tile> {
-        &mut self.tiles
-    }
-
-    fn data(&self) -> &Array<Tile> {
-        &self.tiles
-    }
+    start_tile: Tile,
 }
 
 impl Map {
-    fn parse(input: &str) -> Self {
+    fn parse(input: &str, start_tile: Tile) -> Self {
         let tiles = input
             .lines()
             .map(|line| line.chars().map(Tile::from_char).collect())
             .collect::<Array<Tile>>();
 
-        Self { tiles }
+        Self { tiles, start_tile }
     }
 
     fn find_start(&self) -> Vector {
-        for y in 0..self.height() {
-            for x in 0..self.width() {
+        for y in 0..self.tiles.height() {
+            for x in 0..self.tiles.width() {
                 if self.tiles[y][x] == Tile::Start {
                     return Vector {
                         x: x as i32,
@@ -153,106 +142,149 @@ impl Map {
         }
         panic!("no start found");
     }
-}
 
-struct MapDistanceCounter {
-    counts: Array<usize>,
-}
-
-impl ArrayManipulator<usize> for MapDistanceCounter {
-    fn data_mut(&mut self) -> &mut Array<usize> {
-        &mut self.counts
-    }
-
-    fn data(&self) -> &Array<usize> {
-        &self.counts
-    }
-}
-
-impl MapDistanceCounter {
-    fn new(dimensions: &Vector) -> Self {
-        let counts = vec![vec![0; dimensions.x as usize]; dimensions.y as usize];
-        Self { counts }
-    }
-
-    fn max_distance(&self) -> usize {
-        *self
-            .counts
-            .iter()
-            .map(|line| line.iter().max().unwrap_or(&0))
-            .max()
-            .unwrap_or(&0)
-    }
-
-    fn min(&self, other: &MapDistanceCounter) -> MapDistanceCounter {
-        MapDistanceCounter {
-            counts: self
-                .data()
-                .iter()
-                .zip(other.data())
-                .map(|(a, b)| {
-                    a.iter()
-                        .zip(b)
-                        .map(|(a, b)| if a < b { *a } else { *b })
-                        .collect()
-                })
-                .collect(),
-        }
-    }
-}
-
-fn get_max_distance(map: &Map) -> usize {
-    let start_position = map.find_start();
-
-    // Find the directions that lead to pipes entries from the starting position.
-    let mut start_directions = Vec::new();
-    for neighbor_delta in neighbors_deltas() {
-        let neighbor_position = start_position.add(&neighbor_delta);
-        let tile = map.get(&neighbor_position);
-        if tile.is_some() && tile.unwrap().is_pipe() {
-            for pipe_deltas in tile.unwrap().connected_tiles() {
-                if pipe_deltas == neighbor_delta.neg() {
-                    start_directions.push(neighbor_delta.clone());
+    fn enclosed_area(&self) -> usize {
+        let loop_info = LoopInfo::new(self);
+        let mut area = 0;
+        for y in 0..self.tiles.height() {
+            let mut crosses_sum = 0;
+            for x in 0..self.tiles.width() {
+                let position = Vector {
+                    x: x as i32,
+                    y: y as i32,
+                };
+                crosses_sum += loop_info.cross_directions.get(&position).unwrap();
+                if !loop_info.tiles.contains(&position) && crosses_sum != 0 {
+                    area += 1;
                 }
             }
         }
+        area
     }
-
-    // For each starting direction, follow the pipe and count the distance.
-    start_directions
-        .iter()
-        .map(|direction| walk_map(map, &start_position, direction))
-        .reduce(|a, b| a.min(&b))
-        .unwrap()
-        .max_distance()
 }
 
-fn walk_map(map: &Map, start_position: &Vector, start_direction: &Vector) -> MapDistanceCounter {
-    let mut position = start_position.clone();
-    let mut direction = start_direction.clone();
-    let mut distance = 0;
-    let mut counter = MapDistanceCounter::new(&map.dimensions());
-    loop {
-        position = position.add(&direction);
-        let tile = map.get(&position).unwrap();
-        if tile == Tile::Start {
-            break;
-        } else {
-            distance += 1;
-            counter.set(&position, distance);
+struct LoopInfo {
+    /// A set containing the visited tiles.
+    tiles: HashSet<Vector>,
+
+    /// An integer representing the crosss "direction" of a ray going to the left of the map
+    /// through this tile. It is equal to 1 if the pipe was walked going south in this tile, -1
+    /// going north, and 0 otherwise. This alows to implements Dan's Sunday winding number
+    /// algorithm efficiently.
+    cross_directions: Array<i32>,
+}
+
+impl LoopInfo {
+    fn new(map: &Map) -> Self {
+        let start_position = map.find_start();
+        let mut start_direction = None;
+        for neighbor_delta in neighbors_deltas() {
+            let neighbor_position = start_position.add(&neighbor_delta);
+            let tile = map.tiles.get(&neighbor_position);
+            if tile.is_some() && tile.unwrap().is_pipe() {
+                for pipe_deltas in tile.unwrap().connected_tiles() {
+                    if pipe_deltas == neighbor_delta.neg() {
+                        start_direction = Some(neighbor_delta.clone());
+                        break;
+                    }
+                }
+            }
+        }
+
+        let mut position = start_position.clone();
+        let mut direction = start_direction.unwrap().clone();
+        let mut cross_direction = vec![vec![0; map.tiles.width()]; map.tiles.height()];
+        let mut tiles = HashSet::new();
+        let mut map = map.clone();
+        map.tiles.set(&start_position, map.start_tile);
+        loop {
+            tiles.insert(position.clone());
+            position = position.add(&direction);
+            let tile = map.tiles.get(&position).unwrap();
+            let in_y = direction.y;
             direction = tile.move_through(&direction);
+            let out_y = direction.y;
+            if tile == Tile::SouthEastPipe
+                || tile == Tile::SouthWestPipe
+                || tile == Tile::VerticalPipe
+            {
+                cross_direction[position.y as usize][position.x as usize] =
+                    if in_y != 0 { in_y } else { out_y };
+            }
+            if position == start_position {
+                break;
+            }
+        }
+
+        Self {
+            cross_directions: Array::new(cross_direction),
+            tiles,
         }
     }
-    counter
 }
 
 impl Problem for Day10 {
     fn check(&self) {
-        let map = Map::parse(include_str!("example.txt"));
-        println!("max distance: {}", get_max_distance(&map));
+        let map = Map::parse(include_str!("example.txt"), Tile::from_char('|'));
+        println!("enclosed area: {}", map.enclosed_area());
     }
     fn solve(&self) {
-        let map = Map::parse(include_str!("input.txt"));
-        println!("max distance: {}", get_max_distance(&map));
+        let map = Map::parse(include_str!("input.txt"), Tile::from_char('-'));
+        println!("enclosed area: {}", map.enclosed_area());
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_enclosed_area_of_complex_loop() {
+        let map = Map::parse(include_str!("example.txt"), Tile::from_char('|'));
+        assert_eq!(map.enclosed_area(), 9);
+    }
+
+    #[test]
+    fn test_get_enclosed_area_of_simple_loop() {
+        let map = Map::parse(include_str!("simple_loop.txt"), Tile::from_char('F'));
+        assert_eq!(map.enclosed_area(), 1);
+    }
+
+    #[test]
+    fn test_loop_info_on_simple_loop() {
+        let map = Map::parse(include_str!("simple_loop.txt"), Tile::from_char('F'));
+        let loop_info = LoopInfo::new(&map);
+        assert_eq!(
+            loop_info.cross_directions.shift(&1).format(),
+            "
+11111
+12101
+12101
+11111
+11111
+        "
+            .trim()
+        );
+    }
+
+    #[test]
+    fn test_loop_info_on_complex_loop() {
+        let map = Map::parse(include_str!("example.txt"), Tile::from_char('|'));
+        let loop_info = LoopInfo::new(&map);
+        assert_eq!(
+            loop_info.cross_directions.shift(&1).format(),
+            "
+111111111111
+121111111101
+120111112101
+120111112101
+120111112101
+121101211101
+121101211101
+111111111111
+111111111111
+"
+            .trim()
+        );
     }
 }

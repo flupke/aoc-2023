@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Hash, Eq)]
 pub struct Vector {
     pub x: i32,
     pub y: i32,
