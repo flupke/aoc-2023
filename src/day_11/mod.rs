@@ -46,54 +46,34 @@ impl Universe {
         }
     }
 
-    fn expand(&self) -> Self {
+    fn expand(&self, rate: usize) -> Vec<Vector> {
         let empty_rows = empty_indices(self.map.rows());
         let empty_columns = empty_indices(self.map.columns().iter());
 
-        let mut data = Vec::new();
+        let mut expanded_galaxies = Vec::new();
+        let mut y_shift = 0;
         for y in 0..self.map.height() {
-            let mut row = Vec::new();
-            if empty_rows.contains(&y) {
-                data.push(vec![Tile::Void; self.map.width() + empty_columns.len()]);
-                data.push(vec![Tile::Void; self.map.width() + empty_columns.len()]);
-            } else {
-                for x in 0..self.map.width() {
-                    if empty_columns.contains(&x) {
-                        row.push(Tile::Void);
-                        row.push(Tile::Void);
-                    } else {
-                        row.push(
-                            self.map
-                                .get(&Vector {
-                                    x: x as i32,
-                                    y: y as i32,
-                                })
-                                .unwrap(),
-                        );
-                    }
+            let mut x_shift = 0;
+            for x in 0..self.map.width() {
+                if let Some(Tile::Galaxy) = self.map.get(&Vector {
+                    x: x as i32,
+                    y: y as i32,
+                }) {
+                    expanded_galaxies.push(Vector {
+                        x: x as i32 + x_shift as i32,
+                        y: y as i32 + y_shift as i32,
+                    });
                 }
-                data.push(row);
+                if empty_columns.contains(&x) {
+                    x_shift += rate - 1;
+                }
+            }
+            if empty_rows.contains(&y) {
+                y_shift += rate - 1;
             }
         }
 
-        Self {
-            map: Array::new(data),
-        }
-    }
-
-    fn galaxies_pairs_manhattan_distance_sum(&self) -> i32 {
-        self.map
-            .into_iter()
-            .filter_map(|(position, tile)| {
-                if *tile == Tile::Galaxy {
-                    Some(position)
-                } else {
-                    None
-                }
-            })
-            .combinations(2)
-            .map(|chunk| chunk[0].manhattan_distance(&chunk[1]))
-            .sum()
+        expanded_galaxies
     }
 }
 
@@ -110,20 +90,60 @@ fn empty_indices<'a>(iterator: impl Iterator<Item = &'a Vec<Tile>>) -> Vec<usize
         .collect()
 }
 
+fn pairs_manhattan_distance_sum(points: &[Vector]) -> usize {
+    points
+        .iter()
+        .combinations(2)
+        .map(|chunk| chunk[0].manhattan_distance(chunk[1]) as usize)
+        .sum()
+}
+
 impl Problem for Day11 {
     fn check(&self) {
         let universe = Universe::parse(include_str!("example.txt"));
-        println!(
-            "{}",
-            universe.expand().galaxies_pairs_manhattan_distance_sum()
-        );
+        println!("{}", pairs_manhattan_distance_sum(&universe.expand(100)));
     }
 
     fn solve(&self) {
         let universe = Universe::parse(include_str!("input.txt"));
         println!(
             "{}",
-            universe.expand().galaxies_pairs_manhattan_distance_sum()
+            pairs_manhattan_distance_sum(&universe.expand(1000000))
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_expand() {
+        let universe = Universe::parse(
+            "
+#.#
+...
+#.#
+"
+            .trim(),
+        );
+        assert_eq!(
+            universe.expand(1),
+            vec![
+                Vector { x: 0, y: 0 },
+                Vector { x: 2, y: 0 },
+                Vector { x: 0, y: 2 },
+                Vector { x: 2, y: 2 },
+            ]
+        );
+        assert_eq!(
+            universe.expand(2),
+            vec![
+                Vector { x: 0, y: 0 },
+                Vector { x: 3, y: 0 },
+                Vector { x: 0, y: 3 },
+                Vector { x: 3, y: 3 },
+            ]
         );
     }
 }
