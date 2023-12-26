@@ -18,4 +18,8 @@ impl Vector {
             y: -self.y,
         }
     }
+
+    pub fn manhattan_distance(&self, other: &Vector) -> i32 {
+        (self.x - other.x).abs() + (self.y - other.y).abs()
+    }
 }

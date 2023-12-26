@@ -1,11 +1,8 @@
-mod array;
-mod vector;
-
 use std::{collections::HashSet, fmt::Display, usize};
 
 use aoc_2023_rust_flupke::Problem;
 
-use self::{array::Array, vector::Vector};
+use super::common::{array::Array, vector::Vector};
 
 pub struct Day10;
 

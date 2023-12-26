@@ -1,7 +1,9 @@
 use aoc_2023_rust_flupke::Problem;
 use clap::{Parser, ValueEnum};
+mod common;
 mod day_1;
 mod day_10;
+mod day_11;
 mod day_2;
 mod day_3;
 mod day_4;
@@ -39,6 +41,7 @@ fn main() {
         8 => Box::new(day_8::Day8),
         9 => Box::new(day_9::Day9),
         10 => Box::new(day_10::Day10),
+        11 => Box::new(day_11::Day11),
         _ => panic!("Day {} not implemented", args.day),
     };
     match args.command {

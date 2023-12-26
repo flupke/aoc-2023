@@ -41,8 +41,18 @@ impl<T: Display + Clone> Array<T> {
         }
     }
 
+    pub fn rows(&self) -> impl Iterator<Item = &Vec<T>> {
+        self.data.iter()
+    }
+
+    pub fn columns(&self) -> Vec<Vec<T>> {
+        (0..self.width())
+            .map(move |x| self.rows().map(move |line| line[x].clone()).collect())
+            .collect::<Vec<Vec<T>>>()
+    }
+
     pub fn print(&self) {
-        print!("{}", self.format());
+        println!("{}", self.format());
     }
 
     pub fn format(&self) -> String {
@@ -87,6 +97,59 @@ impl<T: Add<Output = T> + Clone> Array<T> {
     }
 }
 
+impl<T: Default + Clone> Array<T> {
+    pub fn empty(width: usize, height: usize) -> Self {
+        Self {
+            data: vec![vec![T::default(); width]; height],
+        }
+    }
+}
+
+pub struct ArrayIterator<'a, T> {
+    array: &'a Array<T>,
+    y: usize,
+    x: usize,
+}
+
+impl<'a, T: Display + Clone> Iterator for ArrayIterator<'a, T> {
+    type Item = (Vector, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.array
+            .data
+            .get(self.y)
+            .and_then(|line| line.get(self.x))
+            .and_then(|item| {
+                let result = Some((
+                    Vector {
+                        x: self.x as i32,
+                        y: self.y as i32,
+                    },
+                    item,
+                ));
+                self.x += 1;
+                if self.x == self.array.width() {
+                    self.x = 0;
+                    self.y += 1;
+                }
+                result
+            })
+    }
+}
+
+impl<'a, T: Display + Clone> IntoIterator for &'a Array<T> {
+    type Item = (Vector, &'a T);
+    type IntoIter = ArrayIterator<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ArrayIterator {
+            array: self,
+            y: 0,
+            x: 0,
+        }
+    }
+}
+
 impl<T> FromIterator<Vec<T>> for Array<T> {
     fn from_iter<I: IntoIterator<Item = Vec<T>>>(iter: I) -> Self {
         Self {
@@ -106,5 +169,26 @@ impl<T> Index<usize> for Array<T> {
 impl<T> IndexMut<usize> for Array<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.data[index]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_iteration() {
+        let array = Array::new(vec![vec![1, 2, 3], vec![4, 5, 6]]);
+        assert_eq!(
+            array.into_iter().collect::<Vec<(Vector, &i32)>>(),
+            vec![
+                (Vector { x: 0, y: 0 }, &1),
+                (Vector { x: 1, y: 0 }, &2),
+                (Vector { x: 2, y: 0 }, &3),
+                (Vector { x: 0, y: 1 }, &4),
+                (Vector { x: 1, y: 1 }, &5),
+                (Vector { x: 2, y: 1 }, &6)
+            ]
+        );
     }
 }
