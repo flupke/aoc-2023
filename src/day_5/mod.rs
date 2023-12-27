@@ -107,7 +107,7 @@ impl Almanac {
     fn from_text(input: &str) -> Self {
         let mut lines = input.lines();
         let seeds_line = lines.next().unwrap();
-        let seeds = split_numbers(seeds_line.split_once(':').unwrap().1);
+        let seeds = split_numbers(seeds_line.split_once(':').unwrap().1, ' ');
         let mut almanac = Self::new(seeds);
         let mut current_correspondence: Option<CorrespondenceMap> = None;
 
@@ -124,7 +124,7 @@ impl Almanac {
                     destination.as_str(),
                 ));
             } else {
-                let numbers = split_numbers(line);
+                let numbers = split_numbers(line, ' ');
                 let destination = numbers[0];
                 let source = numbers[1];
                 let range = numbers[2];

@@ -5,8 +5,8 @@ pub trait Problem {
     fn solve(&self);
 }
 
-pub fn split_numbers<T: FromStr>(line: &str) -> Vec<T> {
-    line.split(' ')
+pub fn split_numbers<T: FromStr>(line: &str, separator: char) -> Vec<T> {
+    line.split(separator)
         .filter_map(|n| n.trim().parse::<T>().ok())
         .collect::<Vec<T>>()
 }

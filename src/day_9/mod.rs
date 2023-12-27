@@ -8,7 +8,7 @@ struct Data {
 
 impl Data {
     fn parse(input: &str) -> Self {
-        let series = input.lines().map(split_numbers).collect();
+        let series = input.lines().map(|line| split_numbers(line, ' ')).collect();
         Data { series }
     }
 

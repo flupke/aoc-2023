@@ -40,6 +40,7 @@ fn parse_races(text: &str) -> Vec<Race> {
             .split_once(' ')
             .expect("durations list")
             .1,
+        ' ',
     );
     let distances = split_numbers::<Unit>(
         lines
@@ -48,6 +49,7 @@ fn parse_races(text: &str) -> Vec<Race> {
             .split_once(' ')
             .expect("distances list")
             .1,
+        ' ',
     );
     durations
         .iter()

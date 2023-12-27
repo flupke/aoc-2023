@@ -13,8 +13,8 @@ impl Card {
     fn new(line: &str) -> Self {
         let (id_text, card_content) = line.split_once(":").unwrap();
         let (winning_numbers_text, numbers_text) = card_content.split_once("|").unwrap();
-        let winning_numbers = split_numbers(winning_numbers_text);
-        let numbers = split_numbers(numbers_text);
+        let winning_numbers = split_numbers(winning_numbers_text, ' ');
+        let numbers = split_numbers(numbers_text, ' ');
         let id = id_text
             .split_once(" ")
             .unwrap()
