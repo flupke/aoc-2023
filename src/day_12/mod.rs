@@ -1,146 +1,89 @@
-use itertools::Itertools;
-use std::{fmt::Display, usize};
+use std::usize;
 
 use aoc_2023_rust_flupke::{split_numbers, Problem};
+use memoize::memoize;
 
 pub struct Day12;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
-enum Spring {
-    Unknown,
-    Operational,
-    Damaged,
-}
-
-#[allow(dead_code)]
-impl Spring {
-    fn from_char(input: char) -> Self {
-        match input {
-            '?' => Self::Unknown,
-            '.' => Self::Operational,
-            '#' => Self::Damaged,
-            _ => panic!("invalid tile: {:?}", input),
-        }
-    }
-
-    fn as_char(&self) -> char {
-        match self {
-            Self::Unknown => '?',
-            Self::Operational => '.',
-            Self::Damaged => '#',
-        }
-    }
-
-    fn potential_values(&self) -> Option<Vec<Self>> {
-        match self {
-            Self::Unknown => Some(vec![Self::Operational, Self::Damaged]),
-            _ => None,
-        }
-    }
-}
-
-impl Display for Spring {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Unknown => write!(f, "?"),
-            Self::Operational => write!(f, "."),
-            Self::Damaged => write!(f, "#"),
-        }
-    }
-}
-
 struct Record {
-    springs: Vec<Spring>,
-    damaged_springs: Vec<usize>,
+    springs: String,
+    damaged_chunks: Vec<usize>,
 }
 
 #[allow(dead_code)]
 impl Record {
     fn from_str(input: &str) -> Self {
-        let (springs_str, damaged_springs_str) = input.split_once(' ').unwrap();
-        let springs = springs_str.chars().map(Spring::from_char).collect();
-        let damaged_springs = split_numbers(damaged_springs_str, ',');
+        let (springs, damaged_springs_str) = input.split_once(' ').unwrap();
+        let damaged_chunks = split_numbers(damaged_springs_str, ',');
+        Self {
+            springs: springs.to_string(),
+            damaged_chunks,
+        }
+    }
+
+    fn expand(&self) -> Self {
+        let springs = (0..5)
+            .map(|_| self.springs.clone())
+            .collect::<Vec<_>>()
+            .join("?");
+        let damaged_chunks = (0..5).flat_map(|_| &self.damaged_chunks).cloned().collect();
         Self {
             springs,
-            damaged_springs,
+            damaged_chunks,
         }
-    }
-
-    fn replace_springs(&self, replacements: &Vec<&(usize, Spring)>) -> Self {
-        let mut springs = self.springs.clone();
-        for (index, spring) in replacements {
-            springs[*index] = *spring;
-        }
-        Record {
-            springs,
-            damaged_springs: self.damaged_springs.clone(),
-        }
-    }
-
-    fn format(&self) -> String {
-        format!(
-            "{} {}",
-            self.springs
-                .iter()
-                .map(|spring| spring.as_char())
-                .collect::<String>(),
-            self.damaged_springs
-                .iter()
-                .map(|&value| value.to_string())
-                .join(",")
-        )
-    }
-
-    fn damaged_springs_description(&self) -> Vec<usize> {
-        let mut num_damaged = 0;
-        let mut result = Vec::new();
-
-        for spring in &self.springs {
-            match spring {
-                Spring::Damaged => num_damaged += 1,
-                Spring::Operational => {
-                    if num_damaged > 0 {
-                        result.push(num_damaged);
-                        num_damaged = 0;
-                    }
-                }
-                _ => panic!("invalid spring: {:?}", spring),
-            }
-        }
-        if num_damaged > 0 {
-            result.push(num_damaged);
-        }
-
-        result
-    }
-
-    fn self_check(&self) -> bool {
-        let damaged_springs = self.damaged_springs_description();
-        damaged_springs == self.damaged_springs
     }
 
     fn arrangements(&self) -> usize {
-        let arrangements_input: Vec<Vec<(usize, Spring)>> = self
-            .springs
-            .iter()
-            .enumerate()
-            .flat_map(|(index, &value)| {
-                value.potential_values().map(|potential_values| {
-                    potential_values
-                        .iter()
-                        .map(|&value| (index, value))
-                        .collect()
-                })
-            })
-            .collect();
-        let mut arragements = 0;
-        for replacements in arrangements_input.iter().multi_cartesian_product() {
-            let record = self.replace_springs(&replacements);
-            if record.self_check() {
-                arragements += 1;
-            }
+        count_arrangements(self.springs.clone(), self.damaged_chunks.clone(), None)
+    }
+}
+
+#[memoize]
+fn count_arrangements(
+    springs: String,
+    chunk_lengths: Vec<usize>,
+    current_chunk_length: Option<usize>,
+) -> usize {
+    if springs.is_empty() {
+        return match (chunk_lengths.len(), current_chunk_length) {
+            (0, None) => 1,
+            (1, Some(current_chunk_length)) if chunk_lengths[0] == current_chunk_length => 1,
+            _ => 0,
+        };
+    }
+    if current_chunk_length.is_some() && chunk_lengths.is_empty() {
+        return 0;
+    }
+
+    match (springs.as_bytes()[0], current_chunk_length) {
+        (b'.', Some(current_chunk_length)) if current_chunk_length != chunk_lengths[0] => 0,
+        (b'.', Some(_)) => {
+            count_arrangements(springs[1..].to_string(), chunk_lengths[1..].to_vec(), None)
         }
-        arragements
+        (b'.', None) => count_arrangements(springs[1..].to_string(), chunk_lengths, None),
+        (b'#', Some(current_chunk_length)) => count_arrangements(
+            springs[1..].to_string(),
+            chunk_lengths,
+            Some(current_chunk_length + 1),
+        ),
+        (b'#', None) => count_arrangements(springs[1..].to_string(), chunk_lengths, Some(1)),
+        (b'?', Some(current_chunk_length)) => {
+            let mut total = count_arrangements(
+                springs[1..].to_string(),
+                chunk_lengths.clone(),
+                Some(current_chunk_length + 1),
+            );
+            if current_chunk_length == chunk_lengths[0] {
+                total +=
+                    count_arrangements(springs[1..].to_string(), chunk_lengths[1..].to_vec(), None);
+            }
+            total
+        }
+        (b'?', None) => {
+            count_arrangements(springs[1..].to_string(), chunk_lengths.clone(), Some(1))
+                + count_arrangements(springs[1..].to_string(), chunk_lengths, None)
+        }
+        _ => unreachable!(),
     }
 }
 
@@ -157,7 +100,7 @@ impl RecordsList {
     fn arrangements_sum(&self) -> usize {
         self.records
             .iter()
-            .map(|record| record.arrangements())
+            .map(|record| record.expand().arrangements())
             .sum()
     }
 }
