@@ -48,7 +48,7 @@ impl<T: Display + Clone> Array<T> {
     pub fn columns(&self) -> Vec<Vec<T>> {
         (0..self.width())
             .map(move |x| self.rows().map(move |line| line[x].clone()).collect())
-            .collect::<Vec<Vec<T>>>()
+            .collect()
     }
 
     pub fn print(&self) {
@@ -170,6 +170,13 @@ impl<T> IndexMut<usize> for Array<T> {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.data[index]
     }
+}
+
+pub fn parse(input: &str) -> Array<char> {
+    input
+        .lines()
+        .map(|line| line.chars().collect())
+        .collect::<Array<char>>()
 }
 
 #[cfg(test)]
