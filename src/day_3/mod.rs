@@ -54,7 +54,7 @@ impl Schematic {
         for y in 0..self.height {
             for x in 0..self.width {
                 let char = self.lines[y].chars().nth(x).unwrap();
-                if char.is_digit(10) {
+                if char.is_ascii_digit() {
                     match current_part {
                         None => {
                             current_part = Some(PlacedPart {

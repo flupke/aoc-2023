@@ -11,12 +11,12 @@ struct Card {
 
 impl Card {
     fn new(line: &str) -> Self {
-        let (id_text, card_content) = line.split_once(":").unwrap();
-        let (winning_numbers_text, numbers_text) = card_content.split_once("|").unwrap();
+        let (id_text, card_content) = line.split_once(':').unwrap();
+        let (winning_numbers_text, numbers_text) = card_content.split_once('|').unwrap();
         let winning_numbers = split_numbers(winning_numbers_text, ' ');
         let numbers = split_numbers(numbers_text, ' ');
         let id = id_text
-            .split_once(" ")
+            .split_once(' ')
             .unwrap()
             .1
             .trim()
@@ -41,7 +41,7 @@ impl Card {
 }
 
 fn count_scratch_cards(input: &str) -> u32 {
-    let cards: Vec<Card> = input.lines().map(|line| Card::new(line)).collect();
+    let cards: Vec<Card> = input.lines().map(Card::new).collect();
     do_count_scratch_cards(cards.as_slice(), cards.len(), 0)
 }
 

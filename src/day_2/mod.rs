@@ -24,8 +24,8 @@ impl Draft {
 
 fn parse_draft(draft: &str) -> Draft {
     let mut result = Draft::new();
-    for draft_entry in draft.split(",") {
-        let (number, color) = draft_entry.trim().split_once(" ").unwrap();
+    for draft_entry in draft.split(',') {
+        let (number, color) = draft_entry.trim().split_once(' ').unwrap();
         let number = number.parse::<u32>().unwrap();
         match color {
             "red" => result.red += number,
@@ -38,9 +38,9 @@ fn parse_draft(draft: &str) -> Draft {
 }
 
 fn get_game_power(line: &str) -> u32 {
-    let suffix = line.split_once(":").unwrap().1;
+    let suffix = line.split_once(':').unwrap().1;
     let mut min_draft = Draft::new();
-    for draft in suffix.split(";") {
+    for draft in suffix.split(';') {
         let draft = parse_draft(draft);
         if draft.red > min_draft.red {
             min_draft.red = draft.red;
@@ -52,7 +52,7 @@ fn get_game_power(line: &str) -> u32 {
             min_draft.blue = draft.blue;
         }
     }
-    return min_draft.power();
+    min_draft.power()
 }
 
 impl Problem for Day2 {
@@ -64,7 +64,7 @@ impl Problem for Day2 {
         let powers_sum = std::fs::read_to_string("src/day_2/input.txt")
             .unwrap()
             .lines()
-            .map(|line| get_game_power(line))
+            .map(get_game_power)
             .reduce(|a, b| a + b)
             .unwrap();
         println!("Possible games sum: {}", powers_sum);

@@ -13,13 +13,13 @@ impl Data {
     }
 
     fn predictions_sum(&self) -> i64 {
-        self.series.iter().map(predict).sum()
+        self.series.iter().map(|values| predict(values)).sum()
     }
 }
 
-fn predict(values: &Vec<i64>) -> i64 {
+fn predict(values: &[i64]) -> i64 {
     let mut all_diffs = Vec::new();
-    let mut input = values.clone();
+    let mut input = values.to_vec();
     loop {
         let diffs = input.windows(2).map(|w| w[1] - w[0]).collect::<Vec<i64>>();
         if diffs.iter().all(|v| *v == 0) {
