@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Display, usize};
+use std::{collections::HashSet, fmt::Display, i32, usize};
 
 use aoc_2023_rust_flupke::Problem;
 
@@ -6,7 +6,7 @@ use super::common::{array::Array, vector::Vector};
 
 pub struct Day10;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Default)]
 enum Tile {
     Start,
     HorizontalPipe,
@@ -15,6 +15,7 @@ enum Tile {
     NorthWestPipe,
     SouthWestPipe,
     SouthEastPipe,
+    #[default]
     Ground,
 }
 
@@ -127,9 +128,13 @@ impl Map {
     }
 
     fn find_start(&self) -> Vector {
-        for y in 0..self.tiles.height() {
-            for x in 0..self.tiles.width() {
-                if self.tiles[y][x] == Tile::Start {
+        for y in 0..self.tiles.height {
+            for x in 0..self.tiles.width {
+                if self.tiles.get(&Vector {
+                    x: x as i32,
+                    y: y as i32,
+                }) == Tile::Start
+                {
                     return Vector {
                         x: x as i32,
                         y: y as i32,
@@ -143,14 +148,14 @@ impl Map {
     fn enclosed_area(&self) -> usize {
         let loop_info = LoopInfo::new(self);
         let mut area = 0;
-        for y in 0..self.tiles.height() {
+        for y in 0..self.tiles.height {
             let mut crosses_sum = 0;
-            for x in 0..self.tiles.width() {
+            for x in 0..self.tiles.width {
                 let position = Vector {
                     x: x as i32,
                     y: y as i32,
                 };
-                crosses_sum += loop_info.cross_directions.get(&position).unwrap();
+                crosses_sum += loop_info.cross_directions.get(&position);
                 if !loop_info.tiles.contains(&position) && crosses_sum != 0 {
                     area += 1;
                 }
@@ -178,8 +183,8 @@ impl LoopInfo {
         for neighbor_delta in neighbors_deltas() {
             let neighbor_position = start_position.add(&neighbor_delta);
             let tile = map.tiles.get(&neighbor_position);
-            if tile.is_some() && tile.unwrap().is_pipe() {
-                for pipe_deltas in tile.unwrap().connected_tiles() {
+            if tile.is_pipe() {
+                for pipe_deltas in tile.connected_tiles() {
                     if pipe_deltas == neighbor_delta.neg() {
                         start_direction = Some(neighbor_delta.clone());
                         break;
@@ -190,14 +195,14 @@ impl LoopInfo {
 
         let mut position = start_position.clone();
         let mut direction = start_direction.unwrap().clone();
-        let mut cross_direction = vec![vec![0; map.tiles.width()]; map.tiles.height()];
+        let mut cross_direction = vec![vec![0; map.tiles.width]; map.tiles.height];
         let mut tiles = HashSet::new();
         let mut map = map.clone();
         map.tiles.set(&start_position, map.start_tile);
         loop {
             tiles.insert(position.clone());
             position = position.add(&direction);
-            let tile = map.tiles.get(&position).unwrap();
+            let tile = map.tiles.get(&position);
             let in_y = direction.y;
             direction = tile.move_through(&direction);
             let out_y = direction.y;
@@ -214,7 +219,7 @@ impl LoopInfo {
         }
 
         Self {
-            cross_directions: Array::new(cross_direction),
+            cross_directions: Array::from_iter(cross_direction),
             tiles,
         }
     }

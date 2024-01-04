@@ -2,13 +2,17 @@ use aoc_2023_rust_flupke::Problem;
 
 use itertools::Itertools;
 
-use crate::common::{array::Array, vector::Vector};
+use crate::common::{
+    array::{Array, NestedIterator},
+    vector::Vector,
+};
 use std::{fmt::Display, usize};
 
 pub struct Day11;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug, Clone, Copy, Default)]
 enum Tile {
+    #[default]
     Void,
     Galaxy,
 }
@@ -47,18 +51,19 @@ impl Universe {
     }
 
     fn expand(&self, rate: usize) -> Vec<Vector> {
-        let empty_rows = empty_indices(self.map.rows());
-        let empty_columns = empty_indices(self.map.columns().iter());
+        let empty_rows = empty_indices(self.map.iter_rows());
+        let empty_columns = empty_indices(self.map.iter_columns());
 
         let mut expanded_galaxies = Vec::new();
         let mut y_shift = 0;
-        for y in 0..self.map.height() {
+        for y in 0..self.map.height {
             let mut x_shift = 0;
-            for x in 0..self.map.width() {
-                if let Some(Tile::Galaxy) = self.map.get(&Vector {
+            for x in 0..self.map.width {
+                if self.map.get(&Vector {
                     x: x as i32,
                     y: y as i32,
-                }) {
+                }) == Tile::Galaxy
+                {
                     expanded_galaxies.push(Vector {
                         x: x as i32 + x_shift as i32,
                         y: y as i32 + y_shift as i32,
@@ -77,11 +82,11 @@ impl Universe {
     }
 }
 
-fn empty_indices<'a>(iterator: impl Iterator<Item = &'a Vec<Tile>>) -> Vec<usize> {
+fn empty_indices(iterator: NestedIterator<&Tile>) -> Vec<usize> {
     iterator
         .enumerate()
-        .filter_map(|(index, row)| {
-            if row.iter().all(|tile| *tile == Tile::Void) {
+        .filter_map(|(index, mut row)| {
+            if row.all(|tile| *tile == Tile::Void) {
                 Some(index)
             } else {
                 None
