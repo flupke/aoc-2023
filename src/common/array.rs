@@ -15,6 +15,21 @@ pub struct Array<T> {
 type BoxedIterator<'a, T> = Box<dyn Iterator<Item = T> + 'a>;
 pub type NestedIterator<'a, T> = BoxedIterator<'a, BoxedIterator<'a, T>>;
 
+pub trait Coordinate {
+    fn x(&self) -> usize;
+    fn y(&self) -> usize;
+}
+
+impl Coordinate for (usize, usize) {
+    fn x(&self) -> usize {
+        self.0
+    }
+
+    fn y(&self) -> usize {
+        self.1
+    }
+}
+
 #[allow(dead_code)]
 impl<T: Display + Clone + Default> Array<T> {
     pub fn new(width: usize, height: usize) -> Self {
@@ -25,12 +40,12 @@ impl<T: Display + Clone + Default> Array<T> {
         }
     }
 
-    pub fn get(&self, at: &Vector) -> T {
-        self.data[at.y as usize * self.width + at.x as usize].clone()
+    pub fn get<C: Coordinate>(&self, at: C) -> &T {
+        &self.data[at.y() * self.width + at.x()]
     }
 
-    pub fn set(&mut self, at: &Vector, value: T) {
-        self.data[at.y as usize * self.width + at.x as usize] = value;
+    pub fn set<C: Coordinate>(&mut self, at: C, value: T) {
+        self.data[at.y() * self.width + at.x()] = value;
     }
 
     pub fn dimensions(&self) -> Vector {
@@ -46,6 +61,12 @@ impl<T: Display + Clone + Default> Array<T> {
 
     pub fn iter_columns(&self) -> NestedIterator<&T> {
         Box::new(ColumnIterator { array: self, x: 0 })
+    }
+
+    pub fn iter_coords(&self) -> impl Iterator<Item = (usize, usize)> {
+        (0..self.height)
+            .cartesian_product(0..self.width)
+            .map(|(y, x)| (x, y))
     }
 
     pub fn print(&self) {
@@ -222,6 +243,15 @@ mod tests {
                 .map(|column| column.cloned().collect::<Vec<_>>())
                 .collect::<Vec<_>>(),
             vec![vec![1, 4], vec![2, 5], vec![3, 6]]
+        );
+    }
+
+    #[test]
+    fn test_iter_coords() {
+        let array = Array::from_iter(vec![vec![1, 2, 3], vec![4, 5, 6]]);
+        assert_eq!(
+            array.iter_coords().collect::<Vec<_>>(),
+            vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)]
         );
     }
 }

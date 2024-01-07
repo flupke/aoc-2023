@@ -59,11 +59,7 @@ impl Universe {
         for y in 0..self.map.height {
             let mut x_shift = 0;
             for x in 0..self.map.width {
-                if self.map.get(&Vector {
-                    x: x as i32,
-                    y: y as i32,
-                }) == Tile::Galaxy
-                {
+                if *self.map.get((x, y)) == Tile::Galaxy {
                     expanded_galaxies.push(Vector {
                         x: x as i32 + x_shift as i32,
                         y: y as i32 + y_shift as i32,

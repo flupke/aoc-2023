@@ -130,11 +130,7 @@ impl Map {
     fn find_start(&self) -> Vector {
         for y in 0..self.tiles.height {
             for x in 0..self.tiles.width {
-                if self.tiles.get(&Vector {
-                    x: x as i32,
-                    y: y as i32,
-                }) == Tile::Start
-                {
+                if *self.tiles.get((x, y)) == Tile::Start {
                     return Vector {
                         x: x as i32,
                         y: y as i32,
@@ -206,9 +202,9 @@ impl LoopInfo {
             let in_y = direction.y;
             direction = tile.move_through(&direction);
             let out_y = direction.y;
-            if tile == Tile::SouthEastPipe
-                || tile == Tile::SouthWestPipe
-                || tile == Tile::VerticalPipe
+            if *tile == Tile::SouthEastPipe
+                || *tile == Tile::SouthWestPipe
+                || *tile == Tile::VerticalPipe
             {
                 cross_direction[position.y as usize][position.x as usize] =
                     if in_y != 0 { in_y } else { out_y };
