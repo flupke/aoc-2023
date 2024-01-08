@@ -20,7 +20,9 @@ pub trait Coordinate {
     fn y(&self) -> usize;
 }
 
-impl Coordinate for (usize, usize) {
+pub type ArrayCoordinates = (usize, usize);
+
+impl Coordinate for ArrayCoordinates {
     fn x(&self) -> usize {
         self.0
     }
