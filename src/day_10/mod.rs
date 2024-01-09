@@ -73,10 +73,10 @@ impl Tile {
         }
     }
 
-    fn move_through(&self, direction: &Vector) -> Vector {
+    fn move_through(&self, direction: Vector) -> Vector {
         match (self, direction) {
-            (Self::HorizontalPipe, Vector { x: 1 | -1, y: 0 }) => direction.clone(),
-            (Self::VerticalPipe, Vector { x: 0, y: 1 | -1 }) => direction.clone(),
+            (Self::HorizontalPipe, Vector { x: 1 | -1, y: 0 }) => direction,
+            (Self::VerticalPipe, Vector { x: 0, y: 1 | -1 }) => direction,
             (Self::NorthEastPipe, Vector { x: 0, y: 1 }) => Vector { x: 1, y: 0 },
             (Self::NorthEastPipe, Vector { x: -1, y: 0 }) => Vector { x: 0, y: -1 },
             (Self::NorthWestPipe, Vector { x: 0, y: 1 }) => Vector { x: -1, y: 0 },
@@ -151,7 +151,7 @@ impl Map {
                     x: x as i32,
                     y: y as i32,
                 };
-                crosses_sum += loop_info.cross_directions.get(&position);
+                crosses_sum += loop_info.cross_directions.get(position);
                 if !loop_info.tiles.contains(&position) && crosses_sum != 0 {
                     area += 1;
                 }
@@ -177,30 +177,30 @@ impl LoopInfo {
         let start_position = map.find_start();
         let mut start_direction = None;
         for neighbor_delta in neighbors_deltas() {
-            let neighbor_position = start_position.add(&neighbor_delta);
-            let tile = map.tiles.get(&neighbor_position);
+            let neighbor_position = start_position + neighbor_delta;
+            let tile = map.tiles.get(neighbor_position);
             if tile.is_pipe() {
                 for pipe_deltas in tile.connected_tiles() {
-                    if pipe_deltas == neighbor_delta.neg() {
-                        start_direction = Some(neighbor_delta.clone());
+                    if pipe_deltas == -neighbor_delta {
+                        start_direction = Some(neighbor_delta);
                         break;
                     }
                 }
             }
         }
 
-        let mut position = start_position.clone();
-        let mut direction = start_direction.unwrap().clone();
+        let mut position = start_position;
+        let mut direction = start_direction.unwrap();
         let mut cross_direction = vec![vec![0; map.tiles.width]; map.tiles.height];
         let mut tiles = HashSet::new();
         let mut map = map.clone();
-        map.tiles.set(&start_position, map.start_tile);
+        map.tiles.set(start_position, map.start_tile);
         loop {
-            tiles.insert(position.clone());
-            position = position.add(&direction);
-            let tile = map.tiles.get(&position);
+            tiles.insert(position);
+            position += direction;
+            let tile = map.tiles.get(position);
             let in_y = direction.y;
-            direction = tile.move_through(&direction);
+            direction = tile.move_through(direction);
             let out_y = direction.y;
             if *tile == Tile::SouthEastPipe
                 || *tile == Tile::SouthWestPipe
