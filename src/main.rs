@@ -8,6 +8,7 @@ mod day_12;
 mod day_13;
 mod day_14;
 mod day_15;
+mod day_16;
 mod day_2;
 mod day_3;
 mod day_4;
@@ -50,6 +51,7 @@ fn main() {
         13 => Box::new(day_13::Day13),
         14 => Box::new(day_14::Day14),
         15 => Box::new(day_15::Day15),
+        16 => Box::new(day_16::Day16),
         _ => panic!("Day {} not implemented", args.day),
     };
     match args.command {

@@ -42,6 +42,15 @@ impl<T: Display + Clone + Default> Array<T> {
         }
     }
 
+    pub fn from_data(data: Vec<T>, width: usize, height: usize) -> Self {
+        assert_eq!(data.len(), width * height);
+        Self {
+            data,
+            width,
+            height,
+        }
+    }
+
     pub fn get<C: Coordinate>(&self, at: C) -> &T {
         &self.data[at.y() * self.width + at.x()]
     }

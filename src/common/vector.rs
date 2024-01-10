@@ -12,6 +12,20 @@ impl Vector {
     pub fn manhattan_distance(&self, other: &Vector) -> i32 {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
+
+    pub fn rotate_clockwise(&self) -> Self {
+        Vector {
+            x: -self.y,
+            y: self.x,
+        }
+    }
+
+    pub fn rotate_counterclockwise(&self) -> Self {
+        Vector {
+            x: self.y,
+            y: -self.x,
+        }
+    }
 }
 
 impl Coordinate for &Vector {
@@ -71,5 +85,22 @@ impl Neg for Vector {
             x: -self.x,
             y: -self.y,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_rotate() {
+        assert_eq!(
+            Vector { x: 1, y: 0 }.rotate_clockwise(),
+            Vector { x: 0, y: 1 }
+        );
+        assert_eq!(
+            Vector { x: 1, y: 0 }.rotate_counterclockwise(),
+            Vector { x: 0, y: -1 }
+        );
     }
 }
