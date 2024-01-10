@@ -65,10 +65,28 @@ impl<T: Display + Clone + Default> Array<T> {
         Box::new(ColumnIterator { array: self, x: 0 })
     }
 
-    pub fn iter_coords(&self) -> impl Iterator<Item = (usize, usize)> {
-        (0..self.height)
-            .cartesian_product(0..self.width)
-            .map(|(y, x)| (x, y))
+    pub fn iter_coords(&self) -> impl Iterator<Item = ArrayCoordinates> + DoubleEndedIterator + '_ {
+        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y)))
+    }
+
+    pub fn iter_vec_coords(&self) -> impl Iterator<Item = Vector> + DoubleEndedIterator + '_ {
+        self.iter_coords().map(|(x, y)| Vector {
+            x: x as i32,
+            y: y as i32,
+        })
+    }
+
+    pub fn iter_col_coords(
+        &self,
+    ) -> impl Iterator<Item = ArrayCoordinates> + DoubleEndedIterator + '_ {
+        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y)))
+    }
+
+    pub fn iter_vec_col_coords(&self) -> impl Iterator<Item = Vector> + DoubleEndedIterator + '_ {
+        self.iter_col_coords().map(|(x, y)| Vector {
+            x: x as i32,
+            y: y as i32,
+        })
     }
 
     pub fn print(&self) {
@@ -254,6 +272,15 @@ mod tests {
         assert_eq!(
             array.iter_coords().collect::<Vec<_>>(),
             vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)]
+        );
+    }
+
+    #[test]
+    fn test_iter_col_coords() {
+        let array = Array::from_iter(vec![vec![1, 2, 3], vec![4, 5, 6]]);
+        assert_eq!(
+            array.iter_col_coords().collect::<Vec<_>>(),
+            vec![(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]
         );
     }
 }
