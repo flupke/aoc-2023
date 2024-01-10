@@ -112,12 +112,54 @@ impl MirrorMap {
         }
     }
 
-    fn trace(&self) -> PhotonMap {
+    fn optimize(&self) -> usize {
+        let mut best_score = 0_usize;
+
+        for x in 0..self.tiles.width {
+            best_score = best_score.max(
+                self.trace(Ray {
+                    direction: DOWN,
+                    origin: Vector { x: x as i32, y: 0 },
+                })
+                .score(),
+            );
+            best_score = best_score.max(
+                self.trace(Ray {
+                    direction: UP,
+                    origin: Vector {
+                        x: x as i32,
+                        y: self.tiles.height as i32 - 1,
+                    },
+                })
+                .score(),
+            );
+        }
+
+        for y in 0..self.tiles.height {
+            best_score = best_score.max(
+                self.trace(Ray {
+                    direction: RIGHT,
+                    origin: Vector { x: 0, y: y as i32 },
+                })
+                .score(),
+            );
+            best_score = best_score.max(
+                self.trace(Ray {
+                    direction: LEFT,
+                    origin: Vector {
+                        x: self.tiles.width as i32 - 1,
+                        y: y as i32,
+                    },
+                })
+                .score(),
+            );
+        }
+
+        best_score
+    }
+
+    fn trace(&self, ray: Ray) -> PhotonMap {
         let mut photon_map = PhotonMap::new(self.tiles.width, self.tiles.height);
-        let ray = Ray {
-            origin: Vector { x: 0, y: 0 },
-            direction: Vector { x: 1, y: 0 },
-        };
         self.do_trace(ray, &mut photon_map, &mut HashSet::new());
         photon_map
     }
@@ -208,8 +250,7 @@ fn refract(ray: &Ray, tile: char) -> Vec<Ray> {
 
 fn solve(input: &str) -> usize {
     let map = MirrorMap::from_str(input);
-    let photon_map = map.trace();
-    photon_map.score()
+    map.optimize()
 }
 
 impl Problem for Day16 {
