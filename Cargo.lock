@@ -65,6 +65,7 @@ dependencies = [
 name = "aoc-2023-rust-flupke"
 version = "0.1.0"
 dependencies = [
+ "circular-buffer",
  "clap",
  "itertools",
  "memoize",
@@ -75,6 +76,12 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "circular-buffer"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8da9d36ad01a07a2c380bdece16e418820ffa8eda01d3debed9bff3f296a84f"
 
 [[package]]
 name = "clap"
