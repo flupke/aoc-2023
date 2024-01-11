@@ -228,11 +228,19 @@ impl<T> FromIterator<Vec<T>> for Array<T> {
     }
 }
 
-pub fn parse(input: &str) -> Array<char> {
+pub fn parse_char(input: &str) -> Array<char> {
     input
         .lines()
         .map(|line| line.chars().collect())
         .collect::<Array<char>>()
+}
+
+#[allow(dead_code)]
+pub fn parse_u8(input: &str) -> Array<u8> {
+    input
+        .lines()
+        .map(|line| line.bytes().collect())
+        .collect::<Array<u8>>()
 }
 
 #[cfg(test)]

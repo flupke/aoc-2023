@@ -5,7 +5,7 @@ use circular_buffer::CircularBuffer;
 use itertools::Itertools;
 
 use crate::common::{
-    array::{parse, Array},
+    array::{parse_char, Array},
     vector::Vector,
 };
 
@@ -18,7 +18,7 @@ struct Platform {
 
 impl Platform {
     fn parse(input: &str) -> Self {
-        let grid = parse(input);
+        let grid = parse_char(input);
         let coords = vec![
             grid.iter_vec_coords().collect::<Vec<_>>(),       // North
             grid.iter_vec_col_coords().collect::<Vec<_>>(),   // West

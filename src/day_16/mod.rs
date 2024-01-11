@@ -3,26 +3,28 @@ use std::collections::HashSet;
 use aoc_2023_rust_flupke::Problem;
 
 use crate::common::{
-    array::{parse, Array},
+    array::{parse_char, Array},
     vector::Vector,
 };
 
+type HereVector = Vector<i16>;
+
 pub struct Day16;
 
-const LEFT: Vector = Vector { x: -1, y: 0 };
-const RIGHT: Vector = Vector { x: 1, y: 0 };
-const UP: Vector = Vector { x: 0, y: -1 };
-const DOWN: Vector = Vector { x: 0, y: 1 };
+const LEFT: HereVector = HereVector { x: -1, y: 0 };
+const RIGHT: HereVector = HereVector { x: 1, y: 0 };
+const UP: HereVector = HereVector { x: 0, y: -1 };
+const DOWN: HereVector = HereVector { x: 0, y: 1 };
 
-#[derive(Debug, Default, Eq, PartialEq, Clone, Hash)]
+#[derive(Debug, Default, Eq, PartialEq, Clone, Hash, Ord, PartialOrd)]
 struct Ray {
-    origin: Vector,
-    direction: Vector,
+    origin: HereVector,
+    direction: HereVector,
 }
 
 impl Ray {
     #[allow(dead_code)]
-    fn from_direction(direction: Vector) -> Self {
+    fn from_direction(direction: HereVector) -> Self {
         Self {
             direction,
             ..Self::default()
@@ -36,7 +38,7 @@ impl Ray {
         }
     }
 
-    fn orient(&self, direction: Vector) -> Self {
+    fn orient(&self, direction: HereVector) -> Self {
         Self { direction, ..*self }
     }
 
@@ -66,7 +68,7 @@ impl PhotonMap {
         }
     }
 
-    fn add_photon(&mut self, at: Vector) {
+    fn add_photon(&mut self, at: HereVector) {
         self.photons.set(at, self.photons.get(at) + 1);
     }
 
@@ -108,7 +110,7 @@ fn wait_for_keypress() {
 impl MirrorMap {
     fn from_str(input: &str) -> Self {
         MirrorMap {
-            tiles: parse(input),
+            tiles: parse_char(input),
         }
     }
 
@@ -119,16 +121,16 @@ impl MirrorMap {
             best_score = best_score.max(
                 self.trace(Ray {
                     direction: DOWN,
-                    origin: Vector { x: x as i32, y: 0 },
+                    origin: HereVector { x: x as i16, y: 0 },
                 })
                 .score(),
             );
             best_score = best_score.max(
                 self.trace(Ray {
                     direction: UP,
-                    origin: Vector {
-                        x: x as i32,
-                        y: self.tiles.height as i32 - 1,
+                    origin: HereVector {
+                        x: x as i16,
+                        y: self.tiles.height as i16 - 1,
                     },
                 })
                 .score(),
@@ -139,16 +141,16 @@ impl MirrorMap {
             best_score = best_score.max(
                 self.trace(Ray {
                     direction: RIGHT,
-                    origin: Vector { x: 0, y: y as i32 },
+                    origin: HereVector { x: 0, y: y as i16 },
                 })
                 .score(),
             );
             best_score = best_score.max(
                 self.trace(Ray {
                     direction: LEFT,
-                    origin: Vector {
-                        x: self.tiles.width as i32 - 1,
-                        y: y as i32,
+                    origin: HereVector {
+                        x: self.tiles.width as i16 - 1,
+                        y: y as i16,
                     },
                 })
                 .score(),
@@ -159,13 +161,10 @@ impl MirrorMap {
     }
 
     fn trace(&self, ray: Ray) -> PhotonMap {
-        let mut photon_map = PhotonMap::new(self.tiles.width, self.tiles.height);
-        self.do_trace(ray, &mut photon_map, &mut HashSet::new());
-        photon_map
-    }
-
-    fn do_trace(&self, ray: Ray, photon_map: &mut PhotonMap, seen: &mut HashSet<Ray>) {
         let mut ray = ray;
+        let mut photon_map = PhotonMap::new(self.tiles.width, self.tiles.height);
+        let mut ray_stack = Vec::new();
+        let mut seen = HashSet::new();
         loop {
             if ray.origin.x < 0
                 || ray.origin.x as usize >= self.tiles.width
@@ -173,33 +172,36 @@ impl MirrorMap {
                 || ray.origin.y as usize >= self.tiles.height
                 || seen.contains(&ray)
             {
-                break;
-            }
-            let tile = *self.tiles.get(ray.origin);
-            photon_map.add_photon(ray.origin);
-            seen.insert(ray.clone());
+                if ray_stack.is_empty() {
+                    break;
+                }
+                ray = ray_stack.pop().unwrap();
+            } else {
+                let tile = *self.tiles.get(ray.origin);
+                photon_map.add_photon(ray.origin);
+                seen.insert(ray.clone());
 
-            // self.print_debug(&ray);
-            // wait_for_keypress();
-
-            if tile == '.' {
-                ray = ray.walk();
-            } else if tile == '/' || tile == '\\' {
-                ray = reflect(ray, tile)
-            } else if tile == '|' || tile == '-' {
-                let refracted = refract(&ray, tile);
-                ray = refracted[0].clone();
-                if refracted.len() == 2 {
-                    self.do_trace(refracted[1].clone(), photon_map, seen);
+                if tile == '.' {
+                    ray = ray.walk();
+                } else if tile == '/' || tile == '\\' {
+                    ray = reflect(ray, tile)
+                } else if tile == '|' || tile == '-' {
+                    let refracted = refract(&ray, tile);
+                    ray = refracted[0].clone();
+                    if refracted.len() == 2 {
+                        ray_stack.push(refracted[1].clone());
+                    }
                 }
             }
         }
+        photon_map
     }
 
     #[allow(dead_code)]
     fn print_debug(&self, ray: &Ray) {
         let mut data = Vec::new();
         for coords in self.tiles.iter_vec_coords() {
+            let coords: HereVector = coords.into();
             let tile = if coords == ray.origin {
                 ray.format_direction()
             } else {
@@ -351,5 +353,12 @@ mod tests {
             refract(&Ray::from_direction(DOWN), '|'),
             vec![Ray::from_direction(DOWN).walk()]
         );
+    }
+
+    #[ignore]
+    #[test]
+    fn test_part_two() {
+        assert_eq!(solve(include_str!("example.txt")), 51);
+        assert_eq!(solve(include_str!("input.txt")), 8163);
     }
 }

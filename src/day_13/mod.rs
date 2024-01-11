@@ -18,7 +18,7 @@ impl Pattern {
 }
 
 fn parse(input: &str) -> Vec<Pattern> {
-    input.split("\n\n").map(array::parse).collect()
+    input.split("\n\n").map(array::parse_char).collect()
 }
 
 fn search_reflection(iterator: NestedIterator<&char>) -> Option<usize> {
