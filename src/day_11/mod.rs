@@ -3,7 +3,7 @@ use aoc_2023_rust_flupke::Problem;
 use itertools::Itertools;
 
 use crate::common::{
-    array::{Array, NestedIterator},
+    grid::{Grid, NestedIterator},
     vector::Vector,
 };
 use std::{fmt::Display, usize};
@@ -37,7 +37,7 @@ impl Display for Tile {
 }
 
 struct Universe {
-    map: Array<Tile>,
+    map: Grid<Tile>,
 }
 
 impl Universe {

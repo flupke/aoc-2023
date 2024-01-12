@@ -5,14 +5,14 @@ use circular_buffer::CircularBuffer;
 use itertools::Itertools;
 
 use crate::common::{
-    array::{parse_char, Array},
+    grid::{parse_char, Grid},
     vector::Vector,
 };
 
 pub struct Day14;
 
 struct Platform {
-    grid: Array<char>,
+    grid: Grid<char>,
     coords: Vec<Vec<Vector>>,
 }
 
@@ -123,7 +123,7 @@ impl Direction {
     }
 }
 
-fn move_rock(grid: &mut Array<char>, coords: Vector, direction: Direction) {
+fn move_rock(grid: &mut Grid<char>, coords: Vector, direction: Direction) {
     let move_vector = direction.vector();
     let mut current_coords = coords;
     loop {

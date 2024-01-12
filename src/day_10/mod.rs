@@ -2,7 +2,7 @@ use std::{collections::HashSet, fmt::Display, i32, usize};
 
 use aoc_2023_rust_flupke::Problem;
 
-use super::common::{array::Array, vector::Vector};
+use super::common::{grid::Grid, vector::Vector};
 
 pub struct Day10;
 
@@ -113,7 +113,7 @@ fn neighbors_deltas() -> impl Iterator<Item = Vector> {
 
 #[derive(Clone)]
 struct Map {
-    tiles: Array<Tile>,
+    tiles: Grid<Tile>,
     start_tile: Tile,
 }
 
@@ -122,7 +122,7 @@ impl Map {
         let tiles = input
             .lines()
             .map(|line| line.chars().map(Tile::from_char).collect())
-            .collect::<Array<Tile>>();
+            .collect::<Grid<Tile>>();
 
         Self { tiles, start_tile }
     }
@@ -169,7 +169,7 @@ struct LoopInfo {
     /// through this tile. It is equal to 1 if the pipe was walked going south in this tile, -1
     /// going north, and 0 otherwise. This alows to implements Dan's Sunday winding number
     /// algorithm efficiently.
-    cross_directions: Array<i32>,
+    cross_directions: Grid<i32>,
 }
 
 impl LoopInfo {
@@ -215,7 +215,7 @@ impl LoopInfo {
         }
 
         Self {
-            cross_directions: Array::from_iter(cross_direction),
+            cross_directions: Grid::from_iter(cross_direction),
             tiles,
         }
     }

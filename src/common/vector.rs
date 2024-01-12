@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Neg, Sub};
 
-use super::array::Coordinate;
+use super::grid::Coordinate;
 
 #[derive(Debug, Clone, Default, PartialEq, Hash, Eq, Copy, Ord, PartialOrd)]
 pub struct Vector<T = i32> {

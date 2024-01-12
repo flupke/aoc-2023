@@ -4,7 +4,7 @@ use aoc_2023_rust_flupke::Problem;
 use rayon::prelude::*;
 
 use crate::common::{
-    array::{parse_char, Array},
+    grid::{parse_char, Grid},
     vector::Vector,
 };
 
@@ -55,17 +55,17 @@ impl Ray {
 }
 
 pub struct MirrorMap {
-    tiles: Array<char>,
+    tiles: Grid<char>,
 }
 
 struct PhotonMap {
-    photons: Array<usize>,
+    photons: Grid<usize>,
 }
 
 impl PhotonMap {
     fn new(width: usize, height: usize) -> Self {
         Self {
-            photons: Array::new(width, height),
+            photons: Grid::new(width, height),
         }
     }
 
@@ -83,7 +83,7 @@ impl PhotonMap {
 
     #[allow(dead_code)]
     fn format(&self) -> String {
-        Array::from_data(
+        Grid::from_data(
             self.photons
                 .data
                 .iter()
@@ -202,7 +202,7 @@ impl MirrorMap {
             };
             data.push(tile);
         }
-        Array::from_data(data, self.tiles.width, self.tiles.height).print();
+        Grid::from_data(data, self.tiles.width, self.tiles.height).print();
     }
 }
 

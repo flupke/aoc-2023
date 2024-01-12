@@ -2,11 +2,11 @@ use std::usize;
 
 use aoc_2023_rust_flupke::Problem;
 
-use crate::common::array::{self, NestedIterator};
+use crate::common::grid::{self, NestedIterator};
 
 pub struct Day13;
 
-type Pattern = array::Array<char>;
+type Pattern = grid::Grid<char>;
 
 impl Pattern {
     fn score(&self) -> usize {
@@ -18,7 +18,7 @@ impl Pattern {
 }
 
 fn parse(input: &str) -> Vec<Pattern> {
-    input.split("\n\n").map(array::parse_char).collect()
+    input.split("\n\n").map(grid::parse_char).collect()
 }
 
 fn search_reflection(iterator: NestedIterator<&char>) -> Option<usize> {
