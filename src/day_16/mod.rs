@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use aoc_2023_rust_flupke::Problem;
+use rayon::prelude::*;
 
 use crate::common::{
     array::{parse_char, Array},
@@ -115,49 +116,41 @@ impl MirrorMap {
     }
 
     fn optimize(&self) -> usize {
-        let mut best_score = 0_usize;
+        let mut start_rays = Vec::new();
 
         for x in 0..self.tiles.width {
-            best_score = best_score.max(
-                self.trace(Ray {
-                    direction: DOWN,
-                    origin: HereVector { x: x as i16, y: 0 },
-                })
-                .score(),
-            );
-            best_score = best_score.max(
-                self.trace(Ray {
-                    direction: UP,
-                    origin: HereVector {
-                        x: x as i16,
-                        y: self.tiles.height as i16 - 1,
-                    },
-                })
-                .score(),
-            );
+            start_rays.push(Ray {
+                direction: DOWN,
+                origin: HereVector { x: x as i16, y: 0 },
+            });
+            start_rays.push(Ray {
+                direction: UP,
+                origin: HereVector {
+                    x: x as i16,
+                    y: self.tiles.height as i16 - 1,
+                },
+            });
         }
 
         for y in 0..self.tiles.height {
-            best_score = best_score.max(
-                self.trace(Ray {
-                    direction: RIGHT,
-                    origin: HereVector { x: 0, y: y as i16 },
-                })
-                .score(),
-            );
-            best_score = best_score.max(
-                self.trace(Ray {
-                    direction: LEFT,
-                    origin: HereVector {
-                        x: self.tiles.width as i16 - 1,
-                        y: y as i16,
-                    },
-                })
-                .score(),
-            );
+            start_rays.push(Ray {
+                direction: RIGHT,
+                origin: HereVector { x: 0, y: y as i16 },
+            });
+            start_rays.push(Ray {
+                direction: LEFT,
+                origin: HereVector {
+                    x: self.tiles.width as i16 - 1,
+                    y: y as i16,
+                },
+            });
         }
 
-        best_score
+        start_rays
+            .par_iter()
+            .map(|ray| self.trace(ray.clone()).score())
+            .max()
+            .unwrap()
     }
 
     fn trace(&self, ray: Ray) -> PhotonMap {
@@ -186,10 +179,10 @@ impl MirrorMap {
                 } else if tile == '/' || tile == '\\' {
                     ray = reflect(ray, tile)
                 } else if tile == '|' || tile == '-' {
-                    let refracted = refract(&ray, tile);
-                    ray = refracted[0].clone();
-                    if refracted.len() == 2 {
-                        ray_stack.push(refracted[1].clone());
+                    let (primary_ray, secondary_ray) = refract(&ray, tile);
+                    ray = primary_ray;
+                    if let Some(ray) = secondary_ray {
+                        ray_stack.push(ray);
                     }
                 }
             }
@@ -230,20 +223,20 @@ fn reflect(ray: Ray, tile: char) -> Ray {
     .walk()
 }
 
-fn refract(ray: &Ray, tile: char) -> Vec<Ray> {
+fn refract(ray: &Ray, tile: char) -> (Ray, Option<Ray>) {
     match ray.direction {
         LEFT | RIGHT => {
             if tile == '|' {
-                vec![ray.orient(UP).walk(), ray.orient(DOWN).walk()]
+                (ray.orient(UP).walk(), Some(ray.orient(DOWN).walk()))
             } else {
-                vec![ray.walk()]
+                (ray.walk(), None)
             }
         }
         UP | DOWN => {
             if tile == '-' {
-                vec![ray.orient(LEFT).walk(), ray.orient(RIGHT).walk()]
+                (ray.orient(LEFT).walk(), Some(ray.orient(RIGHT).walk()))
             } else {
-                vec![ray.walk()]
+                (ray.walk(), None)
             }
         }
         _ => panic!("invalid ray direction {:?}", ray.direction),
@@ -310,48 +303,48 @@ mod tests {
     fn test_refract() {
         assert_eq!(
             refract(&Ray::from_direction(RIGHT), '|'),
-            vec![
+            (
                 Ray::from_direction(UP).walk(),
-                Ray::from_direction(DOWN).walk()
-            ]
+                Some(Ray::from_direction(DOWN).walk())
+            )
         );
         assert_eq!(
             refract(&Ray::from_direction(LEFT), '|'),
-            vec![
+            (
                 Ray::from_direction(UP).walk(),
-                Ray::from_direction(DOWN).walk()
-            ]
+                Some(Ray::from_direction(DOWN).walk())
+            )
         );
         assert_eq!(
             refract(&Ray::from_direction(UP), '-'),
-            vec![
+            (
                 Ray::from_direction(LEFT).walk(),
-                Ray::from_direction(RIGHT).walk()
-            ]
+                Some(Ray::from_direction(RIGHT).walk())
+            )
         );
         assert_eq!(
             refract(&Ray::from_direction(DOWN), '-'),
-            vec![
+            (
                 Ray::from_direction(LEFT).walk(),
-                Ray::from_direction(RIGHT).walk()
-            ]
+                Some(Ray::from_direction(RIGHT).walk())
+            )
         );
 
         assert_eq!(
             refract(&Ray::from_direction(RIGHT), '-'),
-            vec![Ray::from_direction(RIGHT).walk()]
+            (Ray::from_direction(RIGHT).walk(), None)
         );
         assert_eq!(
             refract(&Ray::from_direction(LEFT), '-'),
-            vec![Ray::from_direction(LEFT).walk()]
+            (Ray::from_direction(LEFT).walk(), None)
         );
         assert_eq!(
             refract(&Ray::from_direction(UP), '|'),
-            vec![Ray::from_direction(UP).walk()]
+            (Ray::from_direction(UP).walk(), None)
         );
         assert_eq!(
             refract(&Ray::from_direction(DOWN), '|'),
-            vec![Ray::from_direction(DOWN).walk()]
+            (Ray::from_direction(DOWN).walk(), None)
         );
     }
 

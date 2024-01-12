@@ -133,20 +133,52 @@ Benchmark 1: cargo run -r solve 16
 
 This is probably due to memory alignment issues. I don't want to over-complicate `Array` so I just reverted this change.
 
-## Conclusion
+## Parallelizing
 
-The optimized version now runs 11% faster than the original, and the `HashMap`
-now takes even more time:
+`optimize()` is easily parallelizable, so I gave rayon a try:
 
-```text
-Samples: 15K of event 'cycles:Pu', Event count (approx.): 799423175
-  Children      Self  Command          Shared Object         Symbol
-+   33,94%    33,92%  aoc-2023-rust-f  aoc-2023-rust-flupke  [.] core::hash::BuildHasher::hash_one
-+   27,70%    27,68%  aoc-2023-rust-f  aoc-2023-rust-flupke  [.] _ZN71_$LT$core..hash..sip..Hasher$LT$S$GT$$u20$as$u20$core..hash..Hasher$GT$5write17h4bb7b7de6f
-+   14,08%    12,52%  aoc-2023-rust-f  aoc-2023-rust-flupke  [.] _ZN9hashbrown3raw21RawTable$LT$T$C$A$GT$14reserve_rehash17h0cb3fd1442fef126E.llvm.1366797186149
-+   11,73%    11,73%  aoc-2023-rust-f  aoc-2023-rust-flupke  [.] hashbrown::map::HashMap<K,V,S,A>::insert
-+   10,53%    10,53%  aoc-2023-rust-f  aoc-2023-rust-flupke  [.] aoc_2023_rust_flupke::day_16::MirrorMap::trace
+```rust
+fn optimize(&self) -> usize {
+    let mut start_rays = Vec::new();
+
+    for x in 0..self.tiles.width {
+        start_rays.push(Ray {
+            direction: DOWN,
+            origin: HereVector { x: x as i16, y: 0 },
+        });
+        start_rays.push(Ray {
+            direction: UP,
+            origin: HereVector {
+                x: x as i16,
+                y: self.tiles.height as i16 - 1,
+            },
+        });
+    }
+
+    for y in 0..self.tiles.height {
+        start_rays.push(Ray {
+            direction: RIGHT,
+            origin: HereVector { x: 0, y: y as i16 },
+        });
+        start_rays.push(Ray {
+            direction: LEFT,
+            origin: HereVector {
+                x: self.tiles.width as i16 - 1,
+                y: y as i16,
+            },
+        });
+    }
+
+    start_rays
+        .par_iter()
+        .map(|ray| self.trace(ray.clone()).score())
+        .max()
+        .unwrap()
+}
 ```
 
-I could probably find a faster hash function for `Ray`, but I'm happy with this
-performance exploration and will stop here :)
+```text
+Benchmark 1: cargo run -r solve 16
+  Time (mean ± σ):      55.2 ms ±   1.9 ms    [User: 334.8 ms, System: 37.1 ms]
+  Range (min … max):    53.2 ms …  62.1 ms    47 runs
+```
