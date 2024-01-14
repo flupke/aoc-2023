@@ -16,6 +16,7 @@ type BoxedIterator<'a, T> = Box<dyn Iterator<Item = T> + 'a>;
 pub type NestedIterator<'a, T> = BoxedIterator<'a, BoxedIterator<'a, T>>;
 
 pub trait Coordinate {
+    fn new(x: usize, y: usize) -> Self;
     fn x(&self) -> usize;
     fn y(&self) -> usize;
 }
@@ -23,6 +24,10 @@ pub trait Coordinate {
 pub type GridCoordinates = (usize, usize);
 
 impl Coordinate for GridCoordinates {
+    fn new(x: usize, y: usize) -> Self {
+        (x, y)
+    }
+
     fn x(&self) -> usize {
         self.0
     }
@@ -74,28 +79,14 @@ impl<T: Display + Clone + Default> Grid<T> {
         Box::new(ColumnIterator { array: self, x: 0 })
     }
 
-    pub fn iter_coords(&self) -> impl Iterator<Item = GridCoordinates> + DoubleEndedIterator + '_ {
-        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| (x, y)))
+    pub fn iter_coords<C: Coordinate>(&self) -> impl Iterator<Item = C> + DoubleEndedIterator + '_ {
+        (0..self.height).flat_map(move |y| (0..self.width).map(move |x| C::new(x, y)))
     }
 
-    pub fn iter_vec_coords(&self) -> impl Iterator<Item = Vector> + DoubleEndedIterator + '_ {
-        self.iter_coords().map(|(x, y)| Vector {
-            x: x as i32,
-            y: y as i32,
-        })
-    }
-
-    pub fn iter_col_coords(
+    pub fn iter_col_coords<C: Coordinate>(
         &self,
-    ) -> impl Iterator<Item = GridCoordinates> + DoubleEndedIterator + '_ {
-        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| (x, y)))
-    }
-
-    pub fn iter_vec_col_coords(&self) -> impl Iterator<Item = Vector> + DoubleEndedIterator + '_ {
-        self.iter_col_coords().map(|(x, y)| Vector {
-            x: x as i32,
-            y: y as i32,
-        })
+    ) -> impl Iterator<Item = C> + DoubleEndedIterator + '_ {
+        (0..self.width).flat_map(move |x| (0..self.height).map(move |y| C::new(x, y)))
     }
 
     pub fn print(&self) {
@@ -287,7 +278,7 @@ mod tests {
     fn test_iter_coords() {
         let array = Grid::from_iter(vec![vec![1, 2, 3], vec![4, 5, 6]]);
         assert_eq!(
-            array.iter_coords().collect::<Vec<_>>(),
+            array.iter_coords::<GridCoordinates>().collect::<Vec<_>>(),
             vec![(0, 0), (1, 0), (2, 0), (0, 1), (1, 1), (2, 1)]
         );
     }
@@ -296,7 +287,9 @@ mod tests {
     fn test_iter_col_coords() {
         let array = Grid::from_iter(vec![vec![1, 2, 3], vec![4, 5, 6]]);
         assert_eq!(
-            array.iter_col_coords().collect::<Vec<_>>(),
+            array
+                .iter_col_coords::<GridCoordinates>()
+                .collect::<Vec<_>>(),
             vec![(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]
         );
     }

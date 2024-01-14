@@ -1,4 +1,9 @@
-use std::ops::{Add, AddAssign, Neg, Sub};
+use std::{
+    ops::{Add, AddAssign, Div, Neg, Sub},
+    usize,
+};
+
+use num_traits::Float;
 
 use super::grid::Coordinate;
 
@@ -9,6 +14,10 @@ pub struct Vector<T = i32> {
 }
 
 impl<T: num_traits::Signed + Copy> Vector<T> {
+    pub fn new(x: T, y: T) -> Self {
+        Vector { x, y }
+    }
+
     pub fn manhattan_distance(&self, other: &Self) -> T {
         (self.x - other.x).abs() + (self.y - other.y).abs()
     }
@@ -28,17 +37,14 @@ impl<T: num_traits::Signed + Copy> Vector<T> {
     }
 }
 
-impl Coordinate for &Vector<i32> {
-    fn x(&self) -> usize {
-        self.x as usize
-    }
-
-    fn y(&self) -> usize {
-        self.y as usize
-    }
-}
-
 impl Coordinate for Vector<i32> {
+    fn new(x: usize, y: usize) -> Self {
+        Vector {
+            x: x as i32,
+            y: y as i32,
+        }
+    }
+
     fn x(&self) -> usize {
         self.x as usize
     }
@@ -49,6 +55,13 @@ impl Coordinate for Vector<i32> {
 }
 
 impl Coordinate for Vector<i16> {
+    fn new(x: usize, y: usize) -> Self {
+        Vector {
+            x: x as i16,
+            y: y as i16,
+        }
+    }
+
     fn x(&self) -> usize {
         self.x as usize
     }
@@ -87,6 +100,19 @@ impl<T: Sub<Output = T>> Sub for Vector<T> {
     }
 }
 
+pub struct Scalar<T>(pub T);
+
+impl<T: Float> Div<Vector<T>> for Scalar<T> {
+    type Output = Vector<T>;
+
+    fn div(self, other: Vector<T>) -> Vector<T> {
+        Vector {
+            x: self.0 / other.x,
+            y: self.0 / other.y,
+        }
+    }
+}
+
 impl<T: Neg<Output = T>> Neg for Vector<T> {
     type Output = Self;
 
@@ -98,11 +124,18 @@ impl<T: Neg<Output = T>> Neg for Vector<T> {
     }
 }
 
-impl From<Vector<i32>> for Vector<i16> {
-    fn from(item: Vector<i32>) -> Self {
+pub trait ConvertTo<T> {
+    fn convert(self) -> T;
+}
+
+impl<T, U> ConvertTo<Vector<U>> for Vector<T>
+where
+    U: From<T>,
+{
+    fn convert(self) -> Vector<U> {
         Vector {
-            x: item.x as i16,
-            y: item.y as i16,
+            x: self.x.into(),
+            y: self.y.into(),
         }
     }
 }

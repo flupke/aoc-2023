@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use crate::common::{
     grid::{parse_char, Grid},
-    vector::Vector,
+    vector::{ConvertTo, Vector},
 };
 
 type HereVector = Vector<i16>;
@@ -193,8 +193,7 @@ impl MirrorMap {
     #[allow(dead_code)]
     fn print_debug(&self, ray: &Ray) {
         let mut data = Vec::new();
-        for coords in self.tiles.iter_vec_coords() {
-            let coords: HereVector = coords.into();
+        for coords in self.tiles.iter_coords::<HereVector>() {
             let tile = if coords == ray.origin {
                 ray.format_direction()
             } else {

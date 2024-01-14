@@ -5,7 +5,7 @@ use circular_buffer::CircularBuffer;
 use itertools::Itertools;
 
 use crate::common::{
-    grid::{parse_char, Grid},
+    grid::{parse_char, Grid, GridCoordinates},
     vector::Vector,
 };
 
@@ -20,10 +20,10 @@ impl Platform {
     fn parse(input: &str) -> Self {
         let grid = parse_char(input);
         let coords = vec![
-            grid.iter_vec_coords().collect::<Vec<_>>(),       // North
-            grid.iter_vec_col_coords().collect::<Vec<_>>(),   // West
-            grid.iter_vec_coords().rev().collect::<Vec<_>>(), // South
-            grid.iter_vec_col_coords().rev().collect::<Vec<_>>(), // East
+            grid.iter_coords().collect::<Vec<_>>(),           // North
+            grid.iter_col_coords().collect::<Vec<_>>(),       // West
+            grid.iter_coords().rev().collect::<Vec<_>>(),     // South
+            grid.iter_col_coords().rev().collect::<Vec<_>>(), // East
         ];
         Self { grid, coords }
     }
@@ -61,7 +61,7 @@ impl Platform {
 
     fn tilt(&mut self, direction: Direction) {
         for coords in &self.coords[direction as usize] {
-            if *self.grid.get(coords) == 'O' {
+            if *self.grid.get(*coords) == 'O' {
                 move_rock(&mut self.grid, *coords, direction);
             }
         }
@@ -69,7 +69,7 @@ impl Platform {
 
     fn north_beam_load(&self) -> usize {
         let mut total_load = 0;
-        for coords in self.grid.iter_coords() {
+        for coords in self.grid.iter_coords::<GridCoordinates>() {
             if *self.grid.get(coords) == 'O' {
                 total_load += self.grid.height - coords.1;
             }
